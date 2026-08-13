@@ -35,7 +35,7 @@ export async function POST(req: Request) {
     });
 
     //nije bezbedno otkriti da li je mejl tacan
-    if (!user) {
+    if (!user || !user.passwordHash) {
       return NextResponse.json(
         { error: "Invalid credentials" },
         { status: 401 }
