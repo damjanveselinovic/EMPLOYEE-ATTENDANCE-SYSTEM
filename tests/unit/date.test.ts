@@ -22,18 +22,18 @@ describe("lib/date/date.ts", () => {
   });
 
   it("toISODate formats local date parts as YYYY-MM-DD", () => {
-    const d = new Date(2026, 1, 8); // Feb 8 2026 local
+    const d = new Date(2026, 1, 8);
     expect(toISODate(d)).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     expect(toISODate(d)).toBe(`${d.getFullYear()}-02-08`);
   });
 
   it("ymdLocal uses local getters and pad2", () => {
-    const d = new Date(2026, 0, 3); // Jan 3 2026 local
+    const d = new Date(2026, 0, 3);
     expect(ymdLocal(d)).toBe("2026-01-03");
   });
 
   it("addDays returns a new Date and shifts by N days (local)", () => {
-    const d = new Date(2026, 0, 10); // Jan 10
+    const d = new Date(2026, 0, 10);
     const d2 = addDays(d, 5);
     expect(d2).not.toBe(d);
     expect(d2.getFullYear()).toBe(2026);

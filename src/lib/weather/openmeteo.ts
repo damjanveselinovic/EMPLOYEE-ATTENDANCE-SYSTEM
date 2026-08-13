@@ -27,7 +27,6 @@ export async function fetchDailyWeatherArchive(from: string, to: string) {
   url.searchParams.set("end_date", to);
   url.searchParams.set("timezone", tz);
 
-  // daily fields
   url.searchParams.set(
     "daily",
     [
