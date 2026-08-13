@@ -165,6 +165,7 @@ export async function DELETE(
   }
 
   try {
+    // Prvo probaj hard delete - radi samo ako nema povezanih podataka
     const deleted = await prisma.user.delete({
       where: { id: userId },
       select: { id: true, email: true },
@@ -186,13 +187,45 @@ export async function DELETE(
         { status: 404 }
       );
     }
-    // Ako ima FK veze (activities/attendance), delete može pasti.
+
+    const message = String(e?.message ?? "");
+    const pgCode = e?.cause?.code ?? e?.meta?.code ?? e?.cause?.cause?.code;
+
+    const isForeignKeyViolation =
+      e?.code === "P2003" ||
+      pgCode === "23503" ||
+      message.includes("foreign key constraint") ||
+      message.includes("violates RESTRICT");
+
+    if (isForeignKeyViolation) {
+      const deactivated = await prisma.user.update({
+        where: { id: userId },
+        data: { isActive: false },
+        select: { id: true, email: true },
+      });
+
+      await prisma.adminAction.create({
+        data: {
+          action: "DEACTIVATE_USER",
+          adminId: auth.userId,
+          note: `Deactivated ${deactivated.email} (had related records, hard delete blocked)`,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          message:
+            "Korisnik ima povezane podatke (aktivnosti/prisustvo/zahtevi), pa je umesto brisanja deaktiviran.",
+          deactivated: true,
+        },
+        { status: 200 }
+      );
+    }
+
+    console.error("DELETE USER ERROR:", e);
     return NextResponse.json(
-      {
-        error:
-          "Ne mogu da obrišem korisnika (postoje povezani podaci). Predlog: deaktiviraj.",
-      },
-      { status: 409 }
+      { error: "Greška pri brisanju korisnika." },
+      { status: 500 }
     );
   }
 }

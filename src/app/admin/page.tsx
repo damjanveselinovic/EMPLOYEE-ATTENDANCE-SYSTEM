@@ -257,10 +257,28 @@ export default function AdminPage() {
         setStatusMsg(data?.error ?? "Greška pri brisanju korisnika.");
         return;
       }
+
+      // 204 = stvarno obrisan (nema tela)
+      // 200 = deaktiviran umesto obrisan (ima JSON telo sa deactivated: true)
+      let deactivated = false;
+      if (res.status === 200) {
+        const data = await res.json().catch(() => null);
+        deactivated = !!data?.deactivated;
+      }
+
       setStatusType("info");
-      setStatusMsg("Korisnik izbrisan.");
+      setStatusMsg(
+        deactivated
+          ? "Korisnik ima postojeće podatke (aktivnosti/prisustvo), pa je deaktiviran umesto obrisan."
+          : "Korisnik izbrisan."
+      );
+
+      const deletedId = deleteUser.id;
       setDeleteUser(null);
-      await loadUsers();
+
+      // ukloni odmah iz liste - ne oslanjaj se na loadUsers(),
+      // jer GET ruta trenutno možda i dalje vraća neaktivne korisnike
+      setAllUsers((prev) => prev.filter((u) => u.id !== deletedId));
     } finally {
       setBusy(false);
     }
