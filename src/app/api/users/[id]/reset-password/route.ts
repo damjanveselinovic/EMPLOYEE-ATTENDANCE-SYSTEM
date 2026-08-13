@@ -5,6 +5,7 @@ import { requireRole } from "@/lib/auth/auth.guard";
 import { parseIdParam } from "@/lib/types/route-params";
 import bcrypt from "bcrypt";
 import { enforceCsrf } from "@/lib/security/csrf";
+import { createNotification } from "@/lib/notifications/notifications.server";
 
 const { prisma } = prismaModule;
 
@@ -52,6 +53,12 @@ export async function POST(
         adminId: auth.userId,
         note: `Reset password for userId=${userId}`,
       },
+    });
+
+    await createNotification({
+      userId,
+      type: "PASSWORD_RESET",
+      message: "Vaša lozinka je promenjena od strane administratora.",
     });
 
     return NextResponse.json({ ok: true }, { status: 200 });

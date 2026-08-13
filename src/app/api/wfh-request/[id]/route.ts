@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/auth/auth.guard";
 import { enforceCsrf } from "@/lib/security/csrf";
+import { createNotification } from "@/lib/notifications/notifications.server";
 
 export async function PUT(
   req: Request,
@@ -44,7 +45,7 @@ export async function PUT(
 
   const existing = await prisma.wfhRequest.findUnique({
     where: { id: requestId },
-    select: { id: true, status: true, userId: true },
+    select: { id: true, status: true, userId: true, date: true },
   });
 
   if (!existing) {
@@ -72,6 +73,16 @@ export async function PUT(
       decidedById: true,
     },
   });
+
+  if (status === "APPROVED") {
+    await createNotification({
+      userId: existing.userId,
+      type: "WFH_APPROVED",
+      message: `Vaš zahtev za rad od kuće za ${existing.date.toLocaleDateString(
+        "sr-RS"
+      )} je odobren.`,
+    });
+  }
 
   return NextResponse.json({
     ...updated,

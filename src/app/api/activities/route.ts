@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "@/lib/auth/auth.guard";
 import { parseDateOnlyUTC, addDaysUTC } from "@/lib/date/date";
 import { enforceCsrf } from "@/lib/security/csrf";
 const { prisma } = prismaModule;
+import { createNotification } from "@/lib/notifications/notifications.server";
 
 //GET /api/activities?from ... to ...
 export async function GET(req: Request) {
@@ -173,6 +174,14 @@ export async function POST(req: Request) {
       type: { select: { id: true, name: true } },
     },
   });
+
+  if (targetUserId !== meUserId) {
+    await createNotification({
+      userId: targetUserId,
+      type: "ACTIVITY_ASSIGNED",
+      message: `Dodeljena vam je nova aktivnost: ${name}.`,
+    });
+  }
 
   return NextResponse.json({ activity: created }, { status: 201 });
 }

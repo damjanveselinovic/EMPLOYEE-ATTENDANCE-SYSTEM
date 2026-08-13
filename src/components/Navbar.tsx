@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { usePathname } from "next/navigation";
 import UserAvatar from "@/components/UserAvatar";
+import NotificationBell from "@/components/NotificationBell";
 
 export default function Navbar() {
   const router = useRouter();
@@ -140,6 +141,7 @@ export default function Navbar() {
           {user ? (
             <>
               <div className="flex items-center gap-2">
+                <NotificationBell />
                 <UserAvatar email={user.email} size={36} />
                 <span className="pill">
                   {user.email} • <span className="role-badge">{user.role}</span>
