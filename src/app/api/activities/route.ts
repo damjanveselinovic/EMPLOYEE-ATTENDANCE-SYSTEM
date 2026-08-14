@@ -5,6 +5,7 @@ import { parseDateOnlyUTC, addDaysUTC } from "@/lib/date/date";
 import { enforceCsrf } from "@/lib/security/csrf";
 const { prisma } = prismaModule;
 import { createNotification } from "@/lib/notifications/notifications.server";
+import { generateActivityDescription } from "@/lib/AI/activityDescription";
 
 //GET /api/activities?from ... to ...
 export async function GET(req: Request) {
@@ -62,6 +63,7 @@ export async function GET(req: Request) {
       id: true,
       name: true,
       description: true,
+      descriptionSource: true,
       date: true,
       startTime: true,
       endTime: true,
@@ -124,6 +126,21 @@ export async function POST(req: Request) {
     );
   }
 
+  let finalDescription: string | null = description
+    ? String(description).trim() || null
+    : null;
+  let descriptionSource: "MANUAL" | "AI" | null = finalDescription
+    ? "MANUAL"
+    : null;
+
+  if (!finalDescription) {
+    const aiDescription = await generateActivityDescription(name);
+    if (aiDescription) {
+      finalDescription = aiDescription;
+      descriptionSource = "AI";
+    }
+  }
+
   const workType = await prisma.activityType.findUnique({
     where: { name: "WORK" },
     select: { id: true },
@@ -153,7 +170,8 @@ export async function POST(req: Request) {
   const created = await prisma.activity.create({
     data: {
       name,
-      description: description ?? null,
+      description: finalDescription,
+      descriptionSource,
       date: d,
       startTime: start,
       endTime: end,
@@ -164,6 +182,7 @@ export async function POST(req: Request) {
       id: true,
       name: true,
       description: true,
+      descriptionSource: true,
       date: true,
       startTime: true,
       endTime: true,

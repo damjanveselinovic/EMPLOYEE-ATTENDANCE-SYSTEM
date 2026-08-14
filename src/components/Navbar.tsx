@@ -141,13 +141,12 @@ export default function Navbar() {
           {user ? (
             <>
               <div className="flex items-center gap-2">
-                <NotificationBell />
                 <UserAvatar email={user.email} size={36} />
                 <span className="pill">
                   {user.email} • <span className="role-badge">{user.role}</span>
                 </span>
               </div>
-
+              <NotificationBell />
               <button className="btn" onClick={handleLogout}>
                 <img
                   src="/icons/button-icons/logout.svg"

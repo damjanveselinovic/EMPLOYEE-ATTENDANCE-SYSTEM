@@ -37,6 +37,7 @@ type Activity = {
   id: number;
   name: string;
   description: string | null;
+  descriptionSource: "MANUAL" | "AI" | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -117,6 +118,7 @@ export default function CalendarPage() {
   >([]);
   const [userId, setUserId] = useState("");
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [start, setStart] = useState("09:00");
   const [end, setEnd] = useState("10:00");
   const [err, setErr] = useState<string>("");
@@ -222,6 +224,14 @@ export default function CalendarPage() {
     } catch {
       setWeather([]);
     }
+  }
+  function truncateDescription(text: string, maxLength = 100): string {
+    const firstSentence = text.match(/^.*?[.!?](?:\s|$)/);
+    if (firstSentence && firstSentence[0].length <= maxLength + 40) {
+      return firstSentence[0].trim() + "…";
+    }
+    if (text.length <= maxLength) return text;
+    return text.slice(0, maxLength).trim() + "…";
   }
 
   const yearStart = weekStart.getFullYear();
@@ -332,6 +342,7 @@ export default function CalendarPage() {
     setFormDate(d);
     setUserId("");
     setTitle("");
+    setDescription("");
     setStart("09:00");
     setEnd("10:00");
     setErr("");
@@ -343,6 +354,7 @@ export default function CalendarPage() {
     setFormDate(a.date);
     setUserId(String(a.user.id));
     setTitle(a.name);
+    setDescription(a.description ?? "");
     setStart(isoToHHMM(a.startTime));
     setEnd(isoToHHMM(a.endTime));
     setErr("");
@@ -393,7 +405,7 @@ export default function CalendarPage() {
           credentials: "include",
           body: JSON.stringify({
             name: title.trim(),
-            description: null,
+            description: description.trim() ? description.trim() : null,
             date: formDate,
             startTime: startISO,
             endTime: endISO,
@@ -413,7 +425,7 @@ export default function CalendarPage() {
           credentials: "include",
           body: JSON.stringify({
             name: title.trim(),
-            description: null,
+            description: description.trim() ? description.trim() : null,
             date: formDate,
             startTime: startISO,
             endTime: endISO,
@@ -751,12 +763,14 @@ export default function CalendarPage() {
                   <div
                     key={a.id}
                     className="eventCard"
+                    title={a.description ?? undefined}
                     style={{
                       padding: 14,
                       marginTop: 12,
                       border: "1px solid #d7dbe2",
                       borderRadius: 12,
                       boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
+                      cursor: a.description ? "help" : undefined,
                     }}
                   >
                     <p className="eventTitle">{a.name}</p>
@@ -764,6 +778,32 @@ export default function CalendarPage() {
                     <div className="eventTime">
                       {isoToHHMM(a.startTime)} – {isoToHHMM(a.endTime)}
                     </div>
+
+                    {a.description ? (
+                      <div
+                        className="muted"
+                        style={{ fontSize: 12, marginTop: 6, lineHeight: 1.4 }}
+                      >
+                        {truncateDescription(a.description)}
+                        {a.descriptionSource === "AI" ? (
+                          <span
+                            style={{
+                              marginLeft: 6,
+                              fontSize: 10,
+                              padding: "2px 6px",
+                              borderRadius: 999,
+                              background: "#eef2ff",
+                              color: "#4338ca",
+                              fontWeight: 700,
+                              verticalAlign: "middle",
+                            }}
+                            title="Opis je generisan pomoću AI-ja"
+                          >
+                            AI
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     {canEditActivities ? (
                       <div className="muted" style={{ fontSize: 12 }}>
@@ -877,6 +917,28 @@ export default function CalendarPage() {
             onChange={setTitle}
             placeholder="npr. Nastava / Sastanak"
           />
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 13 }} className="muted">
+              Opis (opciono)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ostavi prazno da AI sam generiše opis na osnovu naziva"
+              rows={4}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid #d7dbe2",
+                fontSize: 14,
+                fontFamily: "inherit",
+                lineHeight: 1.5,
+                resize: "vertical",
+              }}
+            />
+          </div>
 
           <div className="row">
             <div style={{ flex: 1 }}>

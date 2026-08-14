@@ -72,6 +72,7 @@ model Activity {
   createdAt   DateTime     @default(now())
   type        ActivityType @relation(fields: [typeId], references: [id])
   user        User         @relation(fields: [userId], references: [id])
+  descriptionSource DescriptionSource?
 }
 
 model AdminAction {
@@ -158,4 +159,7 @@ model Notification {
   @@index([userId, createdAt])
 }
 
-
+enum DescriptionSource {
+  MANUAL
+  AI
+}
