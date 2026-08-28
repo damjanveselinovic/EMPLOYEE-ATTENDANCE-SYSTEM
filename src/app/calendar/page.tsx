@@ -38,6 +38,7 @@ type Activity = {
   name: string;
   description: string | null;
   descriptionSource: "MANUAL" | "AI" | null;
+  googleEventId: string | null;
   date: string;
   startTime: string;
   endTime: string;
@@ -91,6 +92,24 @@ export default function CalendarPage() {
   const isEmployee = user?.role === "EMPLOYEE";
 
   useEffect(() => {
+    const calendarSync = searchParams.get("calendarSync");
+    if (!calendarSync) return;
+
+    if (calendarSync === "success") {
+      setStatusType("info");
+      setStatusMsg("Aktivnost sinhronizovana sa Google Calendar-om.");
+    } else if (calendarSync === "denied") {
+      setStatusType("error");
+      setStatusMsg("Pristup Google Calendar-u je odbijen.");
+    } else {
+      setStatusType("error");
+      setStatusMsg("Greška pri sinhronizaciji sa Google Calendar-om.");
+    }
+
+    router.replace("/calendar");
+  }, [searchParams, router]);
+
+  useEffect(() => {
     const wfh = searchParams.get("wfh");
     if (wfh !== "1") return;
 
@@ -123,6 +142,11 @@ export default function CalendarPage() {
   const [end, setEnd] = useState("10:00");
   const [err, setErr] = useState<string>("");
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiQuestion, setAiQuestion] = useState("");
+  const [aiReply, setAiReply] = useState<string | null>(null);
+  const [aiSuggestedDate, setAiSuggestedDate] = useState<string | null>(null);
+  const [aiBusy, setAiBusy] = useState(false);
 
   const days = useMemo(() => {
     return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i));
@@ -288,6 +312,10 @@ export default function CalendarPage() {
     setWfhErr("");
     setWfhReason("");
     setWfhDate(defaultDate ?? weekStartStr);
+    setAiOpen(false);
+    setAiQuestion("");
+    setAiReply(null);
+    setAiSuggestedDate(null);
     setWfhOpen(true);
   }
 
@@ -333,6 +361,35 @@ export default function CalendarPage() {
       setStatusMsg("WFH zahtev je poslat (ili ažuriran).");
     } finally {
       setWfhBusy(false);
+    }
+  }
+  async function askAi() {
+    if (!aiQuestion.trim()) return;
+    setAiBusy(true);
+    setAiReply(null);
+    setAiSuggestedDate(null);
+    try {
+      const res = await fetch("/api/wfh-request/ai-assistant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          question: aiQuestion.trim(),
+          from: weekStartStr,
+          to: weekEndStr,
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setAiReply(data?.error ?? "Greška pri komunikaciji sa AI asistentom.");
+        return;
+      }
+      setAiReply(data.reply);
+      setAiSuggestedDate(data.suggestedDate ?? null);
+    } catch {
+      setAiReply("Greška pri komunikaciji sa AI asistentom.");
+    } finally {
+      setAiBusy(false);
     }
   }
 
@@ -471,6 +528,35 @@ export default function CalendarPage() {
       await loadWeek();
     } finally {
       setBusy(false);
+    }
+  }
+  async function handleSyncGoogleCalendar(activityId: number) {
+    try {
+      const res = await fetch(`/api/activities/${activityId}/sync-calendar`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (res.status === 409) {
+        window.location.href = `/api/google-calendar/authorize?activityId=${activityId}`;
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setStatusType("error");
+        setStatusMsg(
+          data?.error ?? "Greška pri sinhronizaciji sa Google Calendar-om."
+        );
+        return;
+      }
+
+      setStatusType("info");
+      setStatusMsg("Aktivnost sinhronizovana sa Google Calendar-om.");
+      await loadWeek();
+    } catch {
+      setStatusType("error");
+      setStatusMsg("Greška pri sinhronizaciji sa Google Calendar-om.");
     }
   }
 
@@ -771,9 +857,54 @@ export default function CalendarPage() {
                       borderRadius: 12,
                       boxShadow: "0 2px 8px rgba(15, 23, 42, 0.04)",
                       cursor: a.description ? "help" : undefined,
+                      position: "relative",
                     }}
                   >
-                    <p className="eventTitle">{a.name}</p>
+                    {user && a.user.id === user.id ? (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleSyncGoogleCalendar(a.id);
+                        }}
+                        title={
+                          a.googleEventId
+                            ? "Sinhronizovano — klikni za ažuriranje"
+                            : "Sinhronizuj sa Google Calendar-om"
+                        }
+                        style={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          width: 26,
+                          height: 26,
+                          padding: 4,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: 8,
+                          border: "1px solid #e5e7eb",
+                          background: "#fff",
+                          boxShadow: "0 1px 4px rgba(15, 23, 42, 0.12)",
+                          cursor: "pointer",
+                          zIndex: 2,
+                        }}
+                      >
+                        <img
+                          src="/icons/google/google-calendar.svg"
+                          alt="Google Calendar"
+                          style={{
+                            width: 16,
+                            height: 16,
+                            opacity: a.googleEventId ? 1 : 0.7,
+                          }}
+                        />
+                      </button>
+                    ) : null}
+
+                    <p className="eventTitle" style={{ paddingRight: 34 }}>
+                      {a.name}
+                    </p>
 
                     <div className="eventTime">
                       {isoToHHMM(a.startTime)} – {isoToHHMM(a.endTime)}
@@ -1193,6 +1324,94 @@ export default function CalendarPage() {
           {wfhErr ? (
             <div style={{ color: "#ff6b6b", fontSize: 13 }}>{wfhErr}</div>
           ) : null}
+
+          <div className="hr" />
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setAiOpen((v) => !v)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "none",
+                border: "none",
+                padding: 0,
+                cursor: "pointer",
+                color: "#4f46e5",
+                fontSize: 13,
+                fontWeight: 600,
+              }}
+            >
+              🤖 {aiOpen ? "Sakrij AI asistenta" : "Pitaj AI asistenta"}
+            </button>
+
+            {aiOpen ? (
+              <div
+                style={{
+                  marginTop: 10,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={aiQuestion}
+                    onChange={(e) => setAiQuestion(e.target.value)}
+                    placeholder="npr. Koji dan ove nedelje da tražim WFH?"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        askAi();
+                      }
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1px solid #d7dbe2",
+                      fontSize: 13,
+                    }}
+                  />
+                  <Button
+                    disabled={aiBusy || !aiQuestion.trim()}
+                    onClick={askAi}
+                  >
+                    {aiBusy ? "..." : "Pošalji"}
+                  </Button>
+                </div>
+
+                {aiReply ? (
+                  <div
+                    style={{
+                      background: "#eef2ff",
+                      border: "1px solid rgba(79, 70, 229, 0.2)",
+                      borderRadius: 10,
+                      padding: "10px 12px",
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {aiReply}
+                    {aiSuggestedDate ? (
+                      <div style={{ marginTop: 8 }}>
+                        <Button
+                          onClick={() => {
+                            setWfhDate(aiSuggestedDate);
+                            setAiOpen(false);
+                          }}
+                        >
+                          Popuni datum: {aiSuggestedDate}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <div className="hr" />
 

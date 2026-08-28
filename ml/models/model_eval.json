@@ -1,0 +1,77 @@
+{
+  "chosen_model": "gradient_boosting",
+  "cv_results": {
+    "random_forest": {
+      "mean_auc": 0.9826313294548589,
+      "std_auc": 0.009762651975401241
+    },
+    "gradient_boosting": {
+      "mean_auc": 0.983504417151476,
+      "std_auc": 0.01642285438720914
+    },
+    "ensemble": {
+      "mean_auc": 0.9823296703296703,
+      "std_auc": 0.009987704792838845
+    }
+  },
+  "test_auc": 1.0,
+  "test_classification_report": {
+    "0": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 63.0
+    },
+    "1": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 17.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 80.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 80.0
+    }
+  },
+  "test_confusion_matrix": [
+    [
+      63,
+      0
+    ],
+    [
+      0,
+      17
+    ]
+  ],
+  "feature_importance": {
+    "avg_hours_recent": 0.7949784774381502,
+    "avg_hours_baseline": 0.01057338887026091,
+    "hours_deviation": 0.004920746026128001,
+    "pct_late_recent": 0.0076114783350880325,
+    "pct_absent_recent": 0.008156532927174307,
+    "avg_arrival_hour_recent": 0.01573118324479299,
+    "arrival_time_std_dev_recent": 0.15785656357662564,
+    "trend_slope": 0.00017162958178002885
+  },
+  "train_size": 320,
+  "test_size": 80,
+  "feature_order": [
+    "avg_hours_recent",
+    "avg_hours_baseline",
+    "hours_deviation",
+    "pct_late_recent",
+    "pct_absent_recent",
+    "avg_arrival_hour_recent",
+    "arrival_time_std_dev_recent",
+    "trend_slope"
+  ]
+}

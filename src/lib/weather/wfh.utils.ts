@@ -14,6 +14,7 @@ export function wfhBadgeClass(status: WfhStatus): string {
 
 export function isBadWeather(w: {
   tempMin: number | null;
+  tempMax: number | null;
   precipSum: number | null;
   windMax: number | null;
   weatherCode: number | null;
@@ -27,8 +28,15 @@ export function isBadWeather(w: {
   const isSnow = code >= 71 && code <= 77;
   const isThunder = code >= 95;
   const isHeavyRain = (code >= 61 && code <= 67) || (code >= 80 && code <= 82);
+  const isHeat = (w.tempMax ?? 0) >= 33;
 
   return (
-    isCold || isThunder || isSnow || precip >= 8 || wind >= 40 || isHeavyRain
+    isCold ||
+    isThunder ||
+    isSnow ||
+    precip >= 8 ||
+    wind >= 40 ||
+    isHeavyRain ||
+    isHeat
   );
 }

@@ -23,8 +23,16 @@ done
 echo "✅ Running migrations..."
 npx prisma migrate deploy
 
-echo "✅ Running seed..."
-node prisma/seed.js
+echo "✅ Checking if user seed is needed..."
+if node scripts/checkIfSeeded.js; then
+  echo "ℹ️  Users already exist - skipping user seed (prevents overwriting manual edits)"
+else
+  echo "✅ Empty database detected - running user seed (first boot)..."
+  node prisma/seed.js
+fi
+
+echo "✅ Running attendance seed (last 60 days)..."
+node scripts/seedAttendance.js
 
 echo "✅ Starting Next.js..."
 npm run start

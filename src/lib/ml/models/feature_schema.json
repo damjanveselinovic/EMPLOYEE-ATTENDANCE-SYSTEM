@@ -1,0 +1,12 @@
+{
+  "feature_order": [
+    "avg_hours_recent",
+    "avg_hours_baseline",
+    "hours_deviation",
+    "pct_late_recent",
+    "pct_absent_recent",
+    "avg_arrival_hour_recent",
+    "arrival_time_std_dev_recent",
+    "trend_slope"
+  ]
+}

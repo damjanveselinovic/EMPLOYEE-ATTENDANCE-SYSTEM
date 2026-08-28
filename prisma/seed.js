@@ -112,97 +112,6 @@ async function createActivityIfNotExists({
     },
   });
 }
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function randomCheckIn() {
-  const hour = randomInt(9, 10);
-  const minute = hour === 9 ? randomInt(0, 59) : randomInt(0, 20);
-  return { hour, minute };
-}
-
-function randomCheckOut() {
-  const hour = randomInt(14, 16);
-  const minute = randomInt(0, 59);
-  return { hour, minute };
-}
-
-function utcDateOnly(d) {
-  return new Date(
-    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
-  );
-}
-
-function isoDateUTC(d) {
-  return d.toISOString().slice(0, 10);
-}
-
-async function seedRandomAttendanceForAllUsers() {
-  const users = await prisma.user.findMany({
-    select: { id: true },
-  });
-
-  // poslednjih 15 dana do juce
-  const today = utcDateOnly(new Date());
-  const endDate = new Date(today);
-  endDate.setUTCDate(endDate.getUTCDate() - 1);
-
-  const startDate = new Date(endDate);
-  startDate.setUTCDate(startDate.getUTCDate() - 14);
-
-  for (const u of users) {
-    for (
-      let d = new Date(startDate);
-      d <= endDate;
-      d.setUTCDate(d.getUTCDate() + 1)
-    ) {
-      const dateStr = isoDateUTC(d);
-
-      const isAbsent = Math.random() < 0.09;
-
-      let startTime = null;
-      let endTime = null;
-      let statusId = 2;
-
-      if (!isAbsent) {
-        const checkIn = randomCheckIn();
-        const checkOut = randomCheckOut();
-
-        startTime = new Date(
-          `${dateStr}T${String(checkIn.hour).padStart(2, "0")}:${String(
-            checkIn.minute
-          ).padStart(2, "0")}:00.000Z`
-        );
-
-        endTime = new Date(
-          `${dateStr}T${String(checkOut.hour).padStart(2, "0")}:${String(
-            checkOut.minute
-          ).padStart(2, "0")}:00.000Z`
-        );
-
-        statusId = checkIn.hour >= 10 ? 3 : 1;
-      }
-
-      await prisma.attendance.upsert({
-        where: {
-          userId_date: {
-            userId: u.id,
-            date: new Date(`${dateStr}T00:00:00.000Z`),
-          },
-        },
-        update: { startTime, endTime, statusId },
-        create: {
-          userId: u.id,
-          date: new Date(`${dateStr}T00:00:00.000Z`),
-          startTime,
-          endTime,
-          statusId,
-        },
-      });
-    }
-  }
-}
 
 async function main() {
   // ---------- lookups ----------
@@ -219,7 +128,7 @@ async function main() {
   const typePto = await upsertLookup(prisma.activityType, "PTO");
   await upsertLookup(prisma.activityType, "TEAMBUILDING");
 
-  // ---------- users ----------
+  // ---------- users (finalna lista - januar 2026 cleanup) ----------
   // Damjan = ADMIN (default admin)
   const damjan = await upsertUser({
     firstName: "Damjan",
@@ -238,52 +147,21 @@ async function main() {
     roleId: roleManager.id,
   });
 
-  // EMPLOYEES
+  // Mina = MANAGER
+  await upsertUser({
+    firstName: "Mina",
+    lastName: "Milosavljevic",
+    email: "minamilo@demo.com",
+    password: "Mina123@",
+    roleId: roleManager.id,
+  });
+
+  // Vojislav = EMPLOYEE (anomaly/burnout test user u seedAttendance.js)
   await upsertUser({
     firstName: "Vojislav",
     lastName: "Buduric",
     email: "vojislav@demo.com",
     password: "Vojislav123@",
-    roleId: roleEmployee.id,
-  });
-
-  await upsertUser({
-    firstName: "Jelena",
-    lastName: "Ilic",
-    email: "jelena.employee@demo.com",
-    password: "Employee123@",
-    roleId: roleEmployee.id,
-  });
-
-  await upsertUser({
-    firstName: "Nikola",
-    lastName: "Stojanovic",
-    email: "nikola.employee@demo.com",
-    password: "Employee123@",
-    roleId: roleEmployee.id,
-  });
-
-  await upsertUser({
-    firstName: "Milan",
-    lastName: "Admin",
-    email: "milan.admin@demo.com",
-    password: "Admin123@",
-    roleId: roleAdmin.id,
-  });
-
-  const ana = await upsertUser({
-    firstName: "Ana",
-    lastName: "Jovovic",
-    email: "ana.employee@demo.com",
-    password: "Ana123@",
-    roleId: roleEmployee.id,
-  });
-
-  const miljan = await upsertUser({
-    firstName: "Miljan",
-    lastName: "Simjanovski",
-    email: "miljan.employee@demo.com",
-    password: "Miljan123@",
     roleId: roleEmployee.id,
   });
 
@@ -354,72 +232,14 @@ async function main() {
     endHHMM: "16:00",
     description: "Personal time off",
   });
-  // Ana activities (EMPLOYEE)
-  await createActivityIfNotExists({
-    userId: ana.id,
-    typeId: typeWork.id,
-    dateObj: weekMon,
-    name: "Deep work (feature implementation)",
-    startHHMM: "10:00",
-    endHHMM: "12:30",
-    description: "Focus block for implementation tasks",
-  });
 
-  await createActivityIfNotExists({
-    userId: ana.id,
-    typeId: typeMeeting.id,
-    dateObj: wed,
-    name: "Client demo prep",
-    startHHMM: "13:00",
-    endHHMM: "14:00",
-  });
-
-  await createActivityIfNotExists({
-    userId: ana.id,
-    typeId: typeMeeting.id,
-    dateObj: fri,
-    name: "Retrospective",
-    startHHMM: "09:00",
-    endHHMM: "09:45",
-  });
-
-  // Miljan activities (EMPLOYEE)
-  await createActivityIfNotExists({
-    userId: miljan.id,
-    typeId: typeMeeting.id,
-    dateObj: tue,
-    name: "Onboarding (project walkthrough)",
-    startHHMM: "11:00",
-    endHHMM: "12:00",
-  });
-
-  await createActivityIfNotExists({
-    userId: miljan.id,
-    typeId: typeWork.id,
-    dateObj: thu,
-    name: "Bug triage",
-    startHHMM: "10:30",
-    endHHMM: "11:30",
-    description: "Review, reproduce and prioritize issues",
-  });
-
-  await createActivityIfNotExists({
-    userId: miljan.id,
-    typeId: typeMeeting.id,
-    dateObj: fri,
-    name: "Tech talk: Prisma + Next.js patterns",
-    startHHMM: "14:00",
-    endHHMM: "15:00",
-    description: "Internal sharing session",
-  });
-
-  await seedRandomAttendanceForAllUsers();
+  // NAPOMENA: Attendance vise NE seeduje ovaj fajl - vidi scripts/seedAttendance.js
 }
 
 (async () => {
   try {
     await main();
-    console.log("Seed finished");
+    console.log("Seed finished (users + activities only)");
   } catch (e) {
     console.error(e);
     process.exit(1);

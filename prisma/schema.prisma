@@ -31,6 +31,9 @@ model User {
   wfhRequests  WfhRequest[] @relation("WfhRequests")
   wfhDecisions WfhRequest[] @relation("WfhDecisions")
   notifications Notification[]
+  googleCalendarAccessToken  String?
+  googleCalendarRefreshToken String?
+  googleCalendarTokenExpiry  DateTime?
 }
 
 model AttendanceStatus {
@@ -49,7 +52,7 @@ model Attendance {
   statusId         Int
   createdAt        DateTime         @default(now())
   status           AttendanceStatus @relation(fields: [statusId], references: [id])
-  user             User             @relation(fields: [userId], references: [id])
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
 }
@@ -71,8 +74,9 @@ model Activity {
   typeId      Int
   createdAt   DateTime     @default(now())
   type        ActivityType @relation(fields: [typeId], references: [id])
-  user        User         @relation(fields: [userId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)  
   descriptionSource DescriptionSource?
+  googleEventId String?
 }
 
 model AdminAction {
@@ -132,8 +136,8 @@ model WfhRequest {
   precipSum   Float?
   windMax     Float?
 
-  user      User  @relation("WfhRequests", fields: [userId], references: [id])
- decidedBy User? @relation("WfhDecisions", fields: [decidedById], references: [id])
+user      User  @relation("WfhRequests", fields: [userId], references: [id], onDelete: Cascade)
+ decidedBy User? @relation("WfhDecisions", fields: [decidedById], references: [id], onDelete: SetNull)
 
   @@unique([userId, date], name: "user_date_unique")
   @@index([date])
@@ -153,9 +157,8 @@ model Notification {
   message   String
   isRead    Boolean          @default(false)
   createdAt DateTime         @default(now())
-  user      User             @relation(fields: [userId], references: [id])
-
-  @@index([userId, isRead])
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)  
+  @@index([userId, isRead]) 
   @@index([userId, createdAt])
 }
 

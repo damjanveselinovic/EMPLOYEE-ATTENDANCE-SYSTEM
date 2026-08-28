@@ -53,6 +53,7 @@ export async function POST(req: Request) {
   const w = await prisma.weatherDaily.findFirst({
     where: { locationKey, date },
     select: {
+      tempMax: true,
       tempMin: true,
       weatherCode: true,
       precipSum: true,

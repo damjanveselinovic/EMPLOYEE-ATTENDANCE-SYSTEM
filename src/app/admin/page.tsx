@@ -38,6 +38,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [statusMsg, setStatusMsg] = useState("");
   const [busy, setBusy] = useState(false);
+  const [lastBehaviorAnalysis, setLastBehaviorAnalysis] = useState<
+    string | null
+  >(null);
 
   const [query, setQuery] = useState("");
   const qNorm = query.trim().toLowerCase();
@@ -66,6 +69,13 @@ export default function AdminPage() {
 
     return () => clearTimeout(t);
   }, [statusMsg]);
+
+  // datum poslednjeg pokretanja AI analize ponasanja - pise ga
+  // stranica /admin/behavior-analysis posle svakog uspesnog ucitavanja
+  useEffect(() => {
+    const stored = localStorage.getItem("behaviorAnalysisLastRun");
+    if (stored) setLastBehaviorAnalysis(stored);
+  }, []);
 
   async function loadUsers() {
     setLoading(true);
@@ -465,6 +475,45 @@ export default function AdminPage() {
       </header>
 
       <WfhRequestsAdminCard />
+
+      {/* AI analiza ponasanja / rizik od burnout-a */}
+      <div
+        className="card"
+        style={{
+          marginTop: 24,
+          padding: 24,
+          border: "1px solid #d7dbe2",
+          borderLeft: "4px solid #4f46e5",
+          boxShadow: "0 4px 24px rgba(15, 23, 42, 0.12)",
+        }}
+      >
+        <h2
+          className="sectionTitle"
+          style={{ margin: "0 0 8px 0", fontSize: 18 }}
+        >
+          Analiza ponašanja zaposlenih (AI)
+        </h2>
+        <p className="muted" style={{ margin: "0 0 4px 0", fontSize: 14 }}>
+          Model mašinskog učenja (Random Forest / Gradient Boosting) analizira
+          obrazac prisustva svakog zaposlenog u poslednjih ~2 meseca (radno
+          vreme, kašnjenja, odsustva) i procenjuje rizik od burnout-a na osnovu
+          promene ponašanja u odnosu na sopstveni prosek.
+        </p>
+        <p className="muted" style={{ margin: "0 0 16px 0", fontSize: 13 }}>
+          Poslednja provera:{" "}
+          <b>
+            {lastBehaviorAnalysis
+              ? fmtLocalDateTimeSR(lastBehaviorAnalysis)
+              : "još nije pokrenuta"}
+          </b>
+        </p>
+        <Button
+          variant="primary"
+          onClick={() => router.push("/admin/behavior-analysis")}
+        >
+          Analiziraj ponašanje korisnika
+        </Button>
+      </div>
 
       {/* Top bar: search + create */}
       <div
