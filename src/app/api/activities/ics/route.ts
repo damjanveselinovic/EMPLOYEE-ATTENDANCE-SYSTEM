@@ -77,8 +77,8 @@ export async function GET(req: Request) {
     lines.push("BEGIN:VEVENT");
     lines.push(`UID:${uid}`);
     lines.push(`DTSTAMP:${nowStamp}`);
-    lines.push(`DTSTART:${toICSDateTime(a.startTime)}`);
-    lines.push(`DTEND:${toICSDateTime(a.endTime)}`);
+    lines.push(`   DTSTART:${toICSDateTime(a.startTime.toISOString())}`);
+    lines.push(`DTEND:${toICSDateTime(a.endTime.toISOString())}`);
     lines.push(`SUMMARY:${summary}`);
     if (desc) lines.push(`DESCRIPTION:${desc}`);
     lines.push("END:VEVENT");

@@ -50,6 +50,7 @@ export async function syncHolidaysForYear(country: string, year: number) {
         country,
         date: dt,
         name: h.localName?.trim() || h.name,
+        source: "nager",
       },
       update: {
         name: h.localName?.trim() || h.name,
