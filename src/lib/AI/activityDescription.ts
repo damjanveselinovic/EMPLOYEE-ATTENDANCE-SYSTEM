@@ -10,7 +10,16 @@ export async function generateActivityDescription(
     return null;
   }
 
-  const prompt = `Napiši kratak, opšti opis (2-3 rečenice) na srpskom jeziku koji objašnjava ŠTA PODRAZUMEVA aktivnost pod nazivom "${name}" - kao da objašnjavaš nekome ko ne zna šta ta aktivnost obično uključuje. NE piši u prvom licu i NE piši kao da se aktivnost već desila (izbegavaj npr. "Učestvovao sam", "Bio sam na", prošlo vreme iz ugla zaposlenog). Piši neutralno i opisno, npr. u stilu "Ova aktivnost obuhvata..." ili "Podrazumeva...". Ne dodaj naslov, navodnike, niti bilo kakve napomene - samo čist tekst opisa.`;
+  const prompt = `Napiši kratak, opsti opis (2-3 rečenice) na 
+                  srpskom jeziku koji objašnjava šta podrazumeva 
+                  aktivnost pod nazivom "${name}" - kao da objašnjavaš 
+                  nekome ko ne zna šta ta aktivnost obično uključuje. 
+                  Ne piši u prvom licu i Ne piši kao da se aktivnost 
+                  već desila (izbegavaj npr. "Učestvovao sam", "Bio sam 
+                  na", prošlo vreme iz ugla zaposlenog). Piši neutralno 
+                  i opisno, npr. u stilu "Ova aktivnost obuhvata..." ili 
+                  "Podrazumeva...". Ne dodaj naslov, navodnike, niti bilo 
+                  kakve napomene - samo čist tekst opisa.`;
   try {
     const res = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
       method: "POST",
