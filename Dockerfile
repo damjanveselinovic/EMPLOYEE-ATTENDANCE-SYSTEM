@@ -1,5 +1,5 @@
 # 1) Build stage
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
 COPY package*.json ./
@@ -12,11 +12,10 @@ COPY . .
 RUN npm run build
 
 # 2) Run stage
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-RUN apk add --no-cache netcat-openbsd
-
+RUN apt-get update && apt-get install -y --no-install-recommends netcat-openbsd && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
