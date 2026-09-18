@@ -166,3 +166,7 @@ enum DescriptionSource {
   MANUAL
   AI
 }
+model SystemState {
+  id           Int       @id @default(1)
+  lastSeedDate DateTime?
+}

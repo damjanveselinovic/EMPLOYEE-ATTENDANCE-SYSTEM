@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { enforceCsrf } from "@/lib/security/csrf";
 import { checkRateLimit } from "@/lib/security/rateLimit";
 import { prisma } from "@/lib/prisma";
+import { runAttendanceSeedIfNeeded } from "@/lib/seedAttendance";
 
 import {
   signToken,
@@ -48,6 +49,9 @@ export async function POST(req: Request) {
         where: { id: user.id },
         data: { lastLoginAt: new Date() },
       });
+      runAttendanceSeedIfNeeded().catch((e) =>
+        console.error("ATTENDANCE SEED ERROR:", e)
+      );
     }
     if (!ok) {
       return NextResponse.json(
@@ -68,7 +72,6 @@ export async function POST(req: Request) {
     return res;
   } catch (e: any) {
     console.error("LOGIN ERROR:", e);
-    // Prisma errors često imaju e.code, e.meta
     return NextResponse.json(
       {
         error: "Server error",
